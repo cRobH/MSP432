@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "driverlib.h"
 #include <stdbool.h>
 
-#include "spiBase.h"
+#include "../inc/spiBase.h"
 
 // This assumes the following settings:
 /*//      SPI PINS
