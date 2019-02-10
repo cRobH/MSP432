@@ -17,3 +17,32 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ************************************************************************/
 
 #pragma once
+
+// op-codes:
+#define WREN  0b00000110    // Set Write Latch Enable
+#define WRDI  0b00000100    // Reset Write Enable Latch
+#define RDSR  0b00000101    // Read Status Register
+#define WRSR  0b00000001    // Write Status Register
+#define READ  0b00000010    // Read Memory Code
+#define WRITE 0b00000010    // Write Memory Code
+#define RDID  0b10011111    // Read Device ID
+
+struct FRAM_data {
+    // This is the FRAM starting address of where we will write/read the data
+    uint16_t startAdr;
+    // This is the addres of tvhe data we want to write/read to/from the FRAM
+    uint32_t *dataAdr;
+    // This is the legnth (in bytes) of the data we're going to write/read
+    int length;
+};
+
+
+// Prototypes:
+bool writeDataToFRAM(struct FRAM_data writeInfo);
+bool readFRAMData(struct FRAM_data readInfo);
+
+uint8_t readStatusReg(void);
+uint8_t readDeviceID(void);
+void    writeStatusReg(uint8_t statusRegData);
+
+

@@ -45,7 +45,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 void initSPI(void){
     // UCB0 CONTROL WORD REGISTER 0
     UCB0CTLW0 = 0x0001; // Hold SPI bus in reset state while
-    // SPI Mode: Clock Phase/Polarity: 01
+    // SPI Mode: Clock Phase/Polarity: 11
     //           MSB First
     //           8-bit
     //           MSP as Master
@@ -53,7 +53,7 @@ void initSPI(void){
     //           Synchronous
     //           SMCLK as clock source
     // => 0b1110100111000001 = 0xE9C1
-    UCB0CTLW0 = 0x69C1;
+    UCB0CTLW0 = 0xE9C1;
 
     // UCB0 BIT RATE CONTROL WORD REGISTER
     // 3 MHz / 1 = 3 MHz
@@ -77,23 +77,23 @@ void initSPI(void){
 }
 
 void setCS(int state){
-    if( state ){
+    if( !state ){
         P2OUT |= 0x04;
     }
-    if( !state ){
+    if( state ){
         P2OUT &= ~0x04;
     }
 }
 
 void transmitSPI(uint8_t data){
 
-    setCS(1);
+    //setCS(1);
     while( !(UCB0IFG & 2) ); // Wait for Transmit buffer to empty
 
     UCB0TXBUF = data; //TRANSMIT BUFFER
 
     while( UCB0STATW & 1 ); // Wait for transmit to finish
-    setCS(0);
+    //setCS(0);
 }
 
 inline int  checkForReceived(void){
