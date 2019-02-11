@@ -29,17 +29,46 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 struct FRAM_data {
     // This is the FRAM starting address of where we will write/read the data
-    uint16_t startAdr;
-    // This is the addres of tvhe data we want to write/read to/from the FRAM
-    uint32_t *dataAdr;
+    uint16_t startAdr; // (FRAM ADDRESS)
+
+    // This is the address of the data we want to write/read to/from the FRAM.
+    char *dataAdr; // (MSP ADDRESS)
+
     // This is the legnth (in bytes) of the data we're going to write/read
     int length;
 };
 
+struct FRAM_libraryEntry {
+    // The length of the title. Titles longer than 255 characters are not supported at this time.
+    uint8_t titleLength;
+
+    // The memory location of the title of the entry
+    char *title;
+
+    // The starting address of where the entry is stored on the FRAM
+    // The min value of this is 0x0002 due to the endOfIndexLoc using 00-01
+    uint16_t startAdr;
+
+    // the number of chars in the entry
+    uint16_t length;
+};
+
+
+
 
 // Prototypes:
-bool writeDataToFRAM(struct FRAM_data writeInfo);
-bool readFRAMData(struct FRAM_data readInfo);
+void writeDataToFRAM(struct FRAM_data writeInfo);
+void readFRAMData(struct FRAM_data readInfo);
+
+uint8_t readNumEntries(void);
+void readIndex(int numEntries, struct FRAM_libraryEntry *indexEntries);
+void writeIndex(struct FRAM_libraryEntry entry, int entryNumber);
+
+void newItem(char title[20], char *dataLoc);
+void deleteItem(int indexToDelete);
+void readItem(int indexToRead, char *dataLoc);
+//void writeIndexString(char *stringToWrite);// needs a memory location of where you wanna store this long ass string of every data entry in the fram
+
 
 uint8_t readStatusReg(void);
 uint8_t readDeviceID(void);
