@@ -26,6 +26,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define READ  0b00000010    // Read Memory Code
 #define WRITE 0b00000010    // Write Memory Code
 #define RDID  0b10011111    // Read Device ID
+//----------
+#define MAX_ENTRIES     10      // Max number of entries; change based on what kind of data we're storing
 
 struct FRAM_data {
     // This is the FRAM starting address of where we will write/read the data
@@ -35,15 +37,13 @@ struct FRAM_data {
     char *dataAdr; // (MSP ADDRESS)
 
     // This is the legnth (in bytes) of the data we're going to write/read
-    int length;
+    uint16_t length;
 };
 
 struct FRAM_libraryEntry {
-    // The length of the title. Titles longer than 255 characters are not supported at this time.
-    uint8_t titleLength;
-
-    // The memory location of the title of the entry
-    char *title;
+    // The title of the entry
+    // This has a hard limit of 28 characters
+    char title[28];
 
     // The starting address of where the entry is stored on the FRAM
     // The min value of this is 0x0002 due to the endOfIndexLoc using 00-01
@@ -62,16 +62,16 @@ void readFRAMData(struct FRAM_data readInfo);
 
 uint8_t readNumEntries(void);
 void readIndex(int numEntries, struct FRAM_libraryEntry *indexEntries);
-void writeIndex(struct FRAM_libraryEntry entry, int entryNumber);
+void writeIndex(int numEntries, struct FRAM_libraryEntry *indexEntries);
 
-void newItem(char title[20], char *dataLoc);
+void newItem(int numEntries, char title[28], char *dataLoc, struct FRAM_libraryEntry *indexEntries);
 void deleteItem(int indexToDelete);
 void readItem(int indexToRead, char *dataLoc);
 //void writeIndexString(char *stringToWrite);// needs a memory location of where you wanna store this long ass string of every data entry in the fram
 
 
 uint8_t readStatusReg(void);
-uint8_t readDeviceID(void);
+uint32_t readDeviceID(void);
 void    writeStatusReg(uint8_t statusRegData);
 
 

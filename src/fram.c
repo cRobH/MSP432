@@ -31,6 +31,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "../inc/fram.h"
 #include "../inc/spiBase.h"
 
+/*
+ *
+ * I ended up scrapping my original plan to have a super generic,
+ * use anywhere kind of filesystem.
+ *
+ * Because that's way too much for me right now.
+ *
+ * Instead, based on a the define MAX_ENTRIES it will create a index at the beginning of the FRAM
+ * in this index, each entry will list the beginning address of each entry
+ *
+ * Each entry will begin with a 28 char title, then the data
+ *
+ */
 
 void writeDataToFRAM(struct FRAM_data writeInfo){
     // Gather the requisite data:
@@ -117,76 +130,6 @@ void readFRAMData(struct FRAM_data readInfo){
 
 }
 
-uint8_t readNumEntries(void){
-    uint8_t numEntries = 0;
-
-    setCS(1);
-    transmitSPI(READ);                      // transmit read op code
-    transmitSPI(0x00);                      // upper 8 bits of memory loc
-    transmitSPI(0x00);                      // lower 8 bits of memory loc
-    numEntries = receiveSPI();              // receive the data containing the number of entries
-    setCS(0);
-
-    return numEntries;
-
-    /*
-     *  Example Use:
-     *
-     *      uint8_t numEntries = readNumEntries();
-     *
-     *  see? not the hardest one here
-     */
-}
-
-void readIndex(int numEntries, struct FRAM_libraryEntry *indexEntries){
-    struct FRAM_data temp;
-
-    uint8_t masterIndex = 0;
-    uint16_t lastMemLoc = 0x0002;
-
-    if(numEntries == 0){
-        return;
-    }
-
-    for(masterIndex = 0; masterIndex < numEntries; masterIndex++){
-        // First of all, we need to know how long the title is!
-        temp.startAdr = lastMemLoc;                             // running location of current memory address in the FRAM
-        // i know the next line gives a warning but char and uint8_t are secretly the same thing so i'm ignoring it for now
-        temp.dataAdr = &indexEntries[masterIndex].titleLength;  // we want to write this to the titleLength member of the upmost struct
-        temp.length = 1;                                        // it's an 8 bit value
-        readFRAMData(temp);
-
-
-
-
-    }
-
-    return;
-
-    /*
-     *  Example of use, given we have five entries:
-     *
-     *      int numEntries = 5;
-     *      struct FRAM_libraryEntry entries[numEntries]; // 5 entries, 5 structs
-     *
-     *      readIndex(numEntries, &entries);
-     *
-     */
-
-}
-void writeIndex(struct FRAM_libraryEntry entry, int entryNumber){
-
-
-    return;
-}
-
-void newItem(char title[20], char *dataLoc);
-void deleteItem(int indexToDelete);
-void readItem(int indexToRead, char *dataLoc);
-void writeIndexString(char *stringToWrite);// needs a memory location of where you wanna store this long ass string of every data entry in the fram
-
-
-
 uint8_t readStatusReg(void){
     uint8_t statusReg;
 
@@ -198,14 +141,17 @@ uint8_t readStatusReg(void){
     return statusReg;
 }
 
-uint8_t readDeviceID(void){
-    uint8_t deviceID;
+uint32_t readDeviceID(void){
+    uint32_t deviceID[4];
 
     setCS(1);
     transmitSPI(RDID);
-    deviceID = receiveSPI();
+    deviceID[0] = receiveSPI();
+    deviceID[1] = receiveSPI();
+    deviceID[2] = receiveSPI();
+    deviceID[3] = receiveSPI();
     setCS(0);
 
-    return deviceID;
+    return (deviceID[3] << 24) & (deviceID[2] << 16) & (deviceID[1] << 8) & deviceID[0];
 }
 void    writeStatusReg(uint8_t statusRegData);
