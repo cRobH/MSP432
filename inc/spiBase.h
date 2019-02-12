@@ -1,7 +1,7 @@
 /************************************************************************
 
 name:           SPI Base Library
-desription:     Provides basic read/write operations over SPI, specifically the UCB0 bus
+description:     Provides basic read/write operations over SPI, specifically the UCB0 bus
                 of the MSP432
 auhor:          generalannoyance
 

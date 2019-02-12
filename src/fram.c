@@ -34,7 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /*
  *
  * I ended up scrapping my original plan to have a super generic,
- * use anywhere kind of filesystem.
+ * use anywhere kind of file system.
  *
  * Because that's way too much for me right now.
  *
@@ -52,8 +52,8 @@ void writeFRAMData(struct FRAM_data writeInfo){
     int      sLength    = writeInfo.length;
 
     // We have to send the address in two eight bit chunks:
-    uint16_t sStartAdrUpper = ( sStartAdr & 0xFF00 ) >> 8;
-    uint16_t sStartAdrLower = ( sStartAdr & 0x00FF );
+    uint8_t sStartAdrUpper = ( sStartAdr & 0xFF00 ) >> 8;
+    uint8_t sStartAdrLower = ( sStartAdr & 0x00FF );
 
     // Some rambling to help me figure out how memory works
     // Each memory address holds 8 bits; to find the ending
@@ -77,10 +77,10 @@ void writeFRAMData(struct FRAM_data writeInfo){
     setCS(0);
     __delay_cycles(20);
     setCS(1);                               // MSP432: "hello there, general kenoFRAM"
-    transmitSPI(opWRITE);                     // transmit write op code
+    transmitSPI(opWRITE);                   // transmit write op code
     transmitSPI(sStartAdrUpper);            // upper half of starting address
     transmitSPI(sStartAdrLower);            // lower half of starting address
-    for(i = 0; i <= sLength; i++){
+    for(i = 0; i < sLength; i++){
         curDataAdr = sDataAdr + i;          // based on the index i, we cycle through the input data array
         uint8_t dataToTX = *curDataAdr;     // we deref curDataAdr to get the data at that location
         transmitSPI(dataToTX);              // send it into the abyss
@@ -114,25 +114,68 @@ void readFRAMData(struct FRAM_data readInfo){
     uint16_t sStartAdrUpper = ( sStartAdr & 0xFF00 ) >> 8;
     uint16_t sStartAdrLower = ( sStartAdr & 0x00FF );
 
-    int i = 0;
+    uint8_t i = 0;
     char *curDataAdr;
 
 
     //------------------- let's get down to business
     setCS(1);                               // MSP432: "hello there, general kenoFRAM"
-    transmitSPI(opWRITE);                     // transmit read op code
+    transmitSPI(opREAD);                     // transmit read op code
     transmitSPI(sStartAdrUpper);            // upper half of starting address
     transmitSPI(sStartAdrLower);            // lower half of starting address
-    for(i = 0; i <= sLength; i++){
+    for(i = 0; i < sLength; i++){
         curDataAdr = sDataAdr + i;          // based on the index i, we cycle through the input data array
-        *curDataAdr = receiveSPI();         // retreive it from the abyss
-        transmitSPI(0x00);                  // tell the FRAM we want more
+        uint8_t read = receiveSPI();         // retrieve it from the abyss
+        *curDataAdr = read;
     }
     setCS(0);                               // tell the FRAM we're done with it
 
     return;
 
 }
+
+inline int getNumEntries(void){
+    return MAX_ENTRIES;
+}
+inline uint16_t getEndOfIndex(void){
+    return MAX_ENTRIES * LENGTH_OF_ENTRY;
+}
+
+void initializeIndex(struct *FRAM_libraryEntries output){
+    // WARNING: WILL EFFECTIVELY DELETE ALL DATA
+
+    // Data will start at MAX_ENTRIES * (28+2+2) = MAX_ENTRIES * 32;
+    uint16_t FRAMdataStartAdr = getEndOfIndex;
+
+    uint8_t i;
+
+    for(i = 0; i < MAX_ENTRIES; i++){
+        output[i].title = {'B','L','A','N','K'};
+        output[i].startAdr = FRAMdataStartAdr;
+        output[i].length = 0;
+    }
+
+    return;
+}
+void readIndex(struct FRAM_libraryEntry *indexEntries){
+    struct FRAM_data temp;
+    uint16_t endOfIndex = MAX_ENTRIES
+    uint8_t i = 0;
+
+    // Initialize temp data to read first entry:
+    temp.startAdr = getEndOfIndex();
+
+
+    for(i = 0; i < MAX_ENTRIES; i++){
+        temp.title
+        temp.startAdr = MAX_ENTRIES + ( LENGTH_OF_ENTRY * i);
+        temp.
+    }
+}
+
+void newItem(char title[28], char *dataLoc, struct FRAM_libraryEntry *indexEntries);
+void deleteItem(int indexToDelete);
+void readItem(int indexToRead, char *dataLoc);
 
 uint8_t readStatusReg(void){
     uint8_t statusReg;
@@ -144,7 +187,6 @@ uint8_t readStatusReg(void){
 
     return statusReg;
 }
-
 uint32_t readDeviceID(void){
     uint32_t deviceID[4];
 
@@ -156,6 +198,6 @@ uint32_t readDeviceID(void){
     deviceID[3] = receiveSPI();
     setCS(0);
 
-    return (deviceID[3] << 24) | (deviceID[2] << 16) | (deviceID[1] << 8) | deviceID[0];
+    return (deviceID[0] << 24) | (deviceID[1] << 16) | (deviceID[2] << 8) | deviceID[3];
 }
 void    writeStatusReg(uint8_t statusRegData);

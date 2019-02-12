@@ -1,6 +1,6 @@
 /************************************************************************
 name:           MB85RS64V FRAM Library
-desription:     Expands off the spiBase files to provide support for the MB85RS64V Ferroelectric RAM IC
+description:     Expands off the spiBase files to provide support for the MB85RS64V Ferroelectric RAM IC
 auhor:          generalannoyance
 
 Copyright (C) 2019  generalannoyance
@@ -23,11 +23,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define opWRDI  0b00000100    // Reset Write Enable Latch
 #define opRDSR  0b00000101    // Read Status Register
 #define opWRSR  0b00000001    // Write Status Register
-#define opREAD  0b00000010    // Read Memory Code
+#define opREAD  0b00000011    // Read Memory Code
 #define opWRITE 0b00000010    // Write Memory Code
 #define opRDID  0b10011111    // Read Device ID
 //----------
 #define MAX_ENTRIES     10      // Max number of entries; change based on what kind of data we're storing
+#define LENGTH_OF_ENTRY 32
+//----------
 
 struct FRAM_data {
     // This is the FRAM starting address of where we will write/read the data
@@ -60,14 +62,17 @@ struct FRAM_libraryEntry {
 void writeFRAMData(struct FRAM_data writeInfo);
 void readFRAMData(struct FRAM_data readInfo);
 
-uint8_t readNumEntries(void);
-void readIndex(int numEntries, struct FRAM_libraryEntry *indexEntries);
-void writeIndex(int numEntries, struct FRAM_libraryEntry *indexEntries);
+// Small inlines to get hardcoded data:
+inline int getNumEntries(void);
+inline uint16_t getEndOfIndex(void);
 
-void newItem(int numEntries, char title[28], char *dataLoc, struct FRAM_libraryEntry *indexEntries);
+int initializeIndex(void);
+void readIndex(struct FRAM_libraryEntry *indexEntries);
+
+void newItem(char title[28], char *dataLoc, struct FRAM_libraryEntry *indexEntries);
 void deleteItem(int indexToDelete);
 void readItem(int indexToRead, char *dataLoc);
-//void writeIndexString(char *stringToWrite);// needs a memory location of where you wanna store this long ass string of every data entry in the fram
+
 
 
 uint8_t readStatusReg(void);
