@@ -29,6 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //----------
 #define MAX_ENTRIES     10      // Max number of entries; change based on what kind of data we're storing
 #define LENGTH_OF_ENTRY 32
+#define START_OF_INDEX  0x0002
 //----------
 
 struct FRAM_data {

@@ -135,10 +135,14 @@ void readFRAMData(struct FRAM_data readInfo){
 }
 
 inline int getNumEntries(void){
-    return MAX_ENTRIES;
+    int max = MAX_ENTRIES;
+    return max;
 }
 inline uint16_t getEndOfIndex(void){
-    return MAX_ENTRIES * LENGTH_OF_ENTRY;
+    int start = START_OF_INDEX;
+    int max = MAX_ENTRIES;
+    int length = START_OF_INDEX;
+    return (start + (max * length) );
 }
 
 void initializeIndex(struct FRAM_libraryEntry *indexEntries){
@@ -147,24 +151,59 @@ void initializeIndex(struct FRAM_libraryEntry *indexEntries){
     // Data will start at MAX_ENTRIES * (28+2+2) = MAX_ENTRIES * 32;
     uint16_t FRAMdataStartAdr = getEndOfIndex();
 
+    char blank[28] = {'B','L','A','N','K',
+                      '0','0','0','0','0',
+                      '0','0','0','0','0',
+                      '0','0','0','0','0',
+                      '0','0','0','0','0',
+                      '0','0','0'
+                     };
+
     uint8_t i;
 
     for(i = 0; i < MAX_ENTRIES; i++){
-        *indexEntries[i].title = {'B','L','A','N','K'};
-        *indexEntries[i].startAdr = FRAMdataStartAdr;
-        *indexEntries[i].length = 0;
+        //indexEntries[i].title[] = {'B','L','A','N','K'};
+        int k = 0;
+        for(k = 0; k < 28; k++){
+            indexEntries[i].title[k] = blank[k];
+        }
+        indexEntries[i].startAdr = FRAMdataStartAdr;
+        indexEntries[i].length = 0;
     }
+
+    uint8_t numEntries = MAX_ENTRIES;
+    struct FRAM_data writeStartOfIndex;
+        writeStartOfIndex.startAdr = 0x0000;
+        writeStartOfIndex.dataAdr = &numEntries;
+        writeStartOfIndex.length = 1;
+
+    writeFRAMData(writeStartOfIndex);
+
+
 
     return;
 }
 void readIndex(struct FRAM_libraryEntry *indexEntries){
     struct FRAM_data temp;
-    uint16_t endOfIndex = MAX_ENTRIES;
+    //uint16_t endOfIndex = MAX_ENTRIES;
     uint8_t i = 0;
 
-    // Initialize temp data to read first entry:
-    char curDataAdr = getEndOfIndex();
 
+    // First, we read the number of entries the FRAM is
+    // currently initialized to. If we ever change it.
+    int numFRAMInit = 0;
+    temp.startAdr = 0x00;
+    temp.dataAdr = &numFRAMInit;
+    temp.length = 1;
+    readFRAMData(temp);
+
+    if(numFRAMInit != MAX_ENTRIES){
+        while(1); // Hold. The FRAM is not initialized for this number of entries.
+    }
+
+    // Get the address for the beginning of the index
+    // This is where we will begin to read data
+    uint16_t curDataAdr = START_OF_INDEX;
     // This for loop will read the index entries out of the index,
     // which is the first (MAX_ENTRIES * LENGTH_OF_ENTRY) bytes of data
     for(i = 0; i < MAX_ENTRIES; i++){
