@@ -45,15 +45,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 void initSPI(void){
     // UCB0 CONTROL WORD REGISTER 0
     UCB0CTLW0 = 0x0001; // Hold SPI bus in reset state while
-    // SPI Mode:
-    //           Clock Phase/Polarity 11
-    //           MSB First
-    //           8-bit
-    //           MSP as Master
-    //           3-pin Mode
-    //           Synchronous
-    //           SMCLK as clock source
-    // => 0b 1110 1001 0100 0001 = 0xE941
+    /*
+     *  Clock Phase Select      0   15      Data captured on rising edge, changed on following
+     *  Clock Polarity Select   1   14      inactive state is high
+     *  MSB First/Last          1   13      MSB first
+     *  Character Length        0   12      8 bit
+     *
+     *  Master Mode Select      1   11      Master
+     *  SPI Mode                0   10      SPI Mode 0 - 3 Pin
+     *  SPI Mode                0   9       SPI Mode 0 - 3 Pin
+     *  Synchronus Mode         1   8       Synchronus Mode
+     *
+     *  Clock Source Select     0   7       SMCLK or 1
+     *  Clock Source Select     1   6       SMCLK    1 for ACLK
+     *  Reserved                -   5
+     *  Reserved                -   4
+     *
+     *  Reserved                -   3
+     *  Reserved                -   2
+     *  STE Mode In Master      0   1       Ignored in 3 wire mode
+     *  Software Reset Enable   1   0       SPI Is disable (for now)
+     *
+     */
+
     UCB0CTLW0 = 0x6941;
 
     // UCB0 BIT RATE CONTROL WORD REGISTER
@@ -109,11 +123,6 @@ uint8_t receiveSPI(void){
     uint8_t rxData = 0;
     transmitSPI(0x00);
     rxData = UCB0RXBUF;
-
-//    while (!(EUSCI_B0->IFG & EUSCI_B_IFG_RXIFG));
-//    rxData = EUSCI_B0->RXBUF;
-
-    //clearRxFlag();
-    uint16_t stats = UCB0STATW;
+    clearRxFlag();
     return rxData;
 }

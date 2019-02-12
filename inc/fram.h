@@ -19,13 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 // op-codes:
-#define WREN  0b00000110    // Set Write Latch Enable
-#define WRDI  0b00000100    // Reset Write Enable Latch
-#define RDSR  0b00000101    // Read Status Register
-#define WRSR  0b00000001    // Write Status Register
-#define READ  0b00000010    // Read Memory Code
-#define WRITE 0b00000010    // Write Memory Code
-#define RDID  0b10011111    // Read Device ID
+#define opWREN  0b00000110    // Set Write Latch Enable
+#define opWRDI  0b00000100    // Reset Write Enable Latch
+#define opRDSR  0b00000101    // Read Status Register
+#define opWRSR  0b00000001    // Write Status Register
+#define opREAD  0b00000010    // Read Memory Code
+#define opWRITE 0b00000010    // Write Memory Code
+#define opRDID  0b10011111    // Read Device ID
 //----------
 #define MAX_ENTRIES     10      // Max number of entries; change based on what kind of data we're storing
 
@@ -57,7 +57,7 @@ struct FRAM_libraryEntry {
 
 
 // Prototypes:
-void writeDataToFRAM(struct FRAM_data writeInfo);
+void writeFRAMData(struct FRAM_data writeInfo);
 void readFRAMData(struct FRAM_data readInfo);
 
 uint8_t readNumEntries(void);

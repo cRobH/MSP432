@@ -45,7 +45,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
-void writeDataToFRAM(struct FRAM_data writeInfo){
+void writeFRAMData(struct FRAM_data writeInfo){
     // Gather the requisite data:
     uint16_t sStartAdr  = writeInfo.startAdr;
     char     *sDataAdr  = writeInfo.dataAdr;
@@ -72,8 +72,12 @@ void writeDataToFRAM(struct FRAM_data writeInfo){
 
 
     //------------------- let's get down to business
+    setCS(1);
+    transmitSPI(opWREN);
+    setCS(0);
+    __delay_cycles(20);
     setCS(1);                               // MSP432: "hello there, general kenoFRAM"
-    transmitSPI(WRITE);                     // transmit write op code
+    transmitSPI(opWRITE);                     // transmit write op code
     transmitSPI(sStartAdrUpper);            // upper half of starting address
     transmitSPI(sStartAdrLower);            // lower half of starting address
     for(i = 0; i <= sLength; i++){
@@ -116,7 +120,7 @@ void readFRAMData(struct FRAM_data readInfo){
 
     //------------------- let's get down to business
     setCS(1);                               // MSP432: "hello there, general kenoFRAM"
-    transmitSPI(WRITE);                     // transmit read op code
+    transmitSPI(opWRITE);                     // transmit read op code
     transmitSPI(sStartAdrUpper);            // upper half of starting address
     transmitSPI(sStartAdrLower);            // lower half of starting address
     for(i = 0; i <= sLength; i++){
@@ -134,7 +138,7 @@ uint8_t readStatusReg(void){
     uint8_t statusReg;
 
     setCS(1);
-    transmitSPI(RDSR);
+    transmitSPI(opRDSR);
     statusReg = receiveSPI();
     setCS(0);
 
@@ -145,13 +149,13 @@ uint32_t readDeviceID(void){
     uint32_t deviceID[4];
 
     setCS(1);
-    transmitSPI(RDID);
+    transmitSPI(opRDID);
     deviceID[0] = receiveSPI();
     deviceID[1] = receiveSPI();
     deviceID[2] = receiveSPI();
     deviceID[3] = receiveSPI();
     setCS(0);
 
-    return (deviceID[3] << 24) & (deviceID[2] << 16) & (deviceID[1] << 8) & deviceID[0];
+    return (deviceID[3] << 24) | (deviceID[2] << 16) | (deviceID[1] << 8) | deviceID[0];
 }
 void    writeStatusReg(uint8_t statusRegData);
