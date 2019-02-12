@@ -66,7 +66,7 @@ void readFRAMData(struct FRAM_data readInfo);
 inline int getNumEntries(void);
 inline uint16_t getEndOfIndex(void);
 
-int initializeIndex(void);
+void initializeIndex(struct FRAM_libraryEntry *indexEntries);
 void readIndex(struct FRAM_libraryEntry *indexEntries);
 
 void newItem(char title[28], char *dataLoc, struct FRAM_libraryEntry *indexEntries);

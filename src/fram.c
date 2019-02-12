@@ -141,35 +141,56 @@ inline uint16_t getEndOfIndex(void){
     return MAX_ENTRIES * LENGTH_OF_ENTRY;
 }
 
-void initializeIndex(struct *FRAM_libraryEntries output){
+void initializeIndex(struct FRAM_libraryEntry *indexEntries){
     // WARNING: WILL EFFECTIVELY DELETE ALL DATA
 
     // Data will start at MAX_ENTRIES * (28+2+2) = MAX_ENTRIES * 32;
-    uint16_t FRAMdataStartAdr = getEndOfIndex;
+    uint16_t FRAMdataStartAdr = getEndOfIndex();
 
     uint8_t i;
 
     for(i = 0; i < MAX_ENTRIES; i++){
-        output[i].title = {'B','L','A','N','K'};
-        output[i].startAdr = FRAMdataStartAdr;
-        output[i].length = 0;
+        *indexEntries[i].title = {'B','L','A','N','K'};
+        *indexEntries[i].startAdr = FRAMdataStartAdr;
+        *indexEntries[i].length = 0;
     }
 
     return;
 }
 void readIndex(struct FRAM_libraryEntry *indexEntries){
     struct FRAM_data temp;
-    uint16_t endOfIndex = MAX_ENTRIES
+    uint16_t endOfIndex = MAX_ENTRIES;
     uint8_t i = 0;
 
     // Initialize temp data to read first entry:
-    temp.startAdr = getEndOfIndex();
+    char curDataAdr = getEndOfIndex();
 
-
+    // This for loop will read the index entries out of the index,
+    // which is the first (MAX_ENTRIES * LENGTH_OF_ENTRY) bytes of data
     for(i = 0; i < MAX_ENTRIES; i++){
-        temp.title
-        temp.startAdr = MAX_ENTRIES + ( LENGTH_OF_ENTRY * i);
-        temp.
+        // The first 28 bytes of the data is
+        // the title. Read 28 bits and store it to data.
+        temp.startAdr = curDataAdr;
+        temp.dataAdr = &indexEntries[i].title[0];
+        temp.length = 28;
+        readFRAMData(temp);
+        curDataAdr += temp.length;
+
+        // The next two bytes are the starting
+        // address of the data
+        temp.startAdr = curDataAdr;
+        temp.dataAdr = &indexEntries[i].startAdr;
+        temp.length = 2;
+        readFRAMData(temp);
+        curDataAdr += 2;
+
+        // The next two bytes is the length of the data entry
+        // so we know how long to read for
+        temp.startAdr = curDataAdr;
+        temp.dataAdr = &indexEntries[i].length;
+        temp.length = 2;
+        readFRAMData(temp);
+        curDataAdr += 2;
     }
 }
 
