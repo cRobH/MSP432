@@ -32,7 +32,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define START_OF_INDEX  0x0002
 //----------
 
-struct FRAM_data {
+typedef struct {
     // This is the FRAM starting address of where we will write/read the data
     uint16_t startAdr; // (FRAM ADDRESS)
 
@@ -41,9 +41,9 @@ struct FRAM_data {
 
     // This is the legnth (in bytes) of the data we're going to write/read
     uint16_t length;
-};
+} FRAM_data;
 
-struct FRAM_libraryEntry {
+typedef struct {
     // The title of the entry
     // This has a hard limit of 28 characters
     char title[28];
@@ -54,23 +54,24 @@ struct FRAM_libraryEntry {
 
     // the number of chars in the entry
     uint16_t length;
-};
+} FRAM_libraryEntry;
 
 
 
 
 // Prototypes:
-void writeFRAMData(struct FRAM_data writeInfo);
-void readFRAMData(struct FRAM_data readInfo);
+void writeFRAMData(FRAM_data writeInfo);
+void readFRAMData(FRAM_data readInfo);
 
 // Small inlines to get hardcoded data:
 inline int getNumEntries(void);
 inline uint16_t getEndOfIndex(void);
 
-void initializeIndex(struct FRAM_libraryEntry *indexEntries);
-void readIndex(struct FRAM_libraryEntry *indexEntries);
+void initializeIndex(FRAM_libraryEntry *indexEntries);
+void readIndex(FRAM_libraryEntry *indexEntries);
+void writeIndex();
 
-void newItem(char title[28], char *dataLoc, struct FRAM_libraryEntry *indexEntries);
+void newItem(FRAM_libraryEntry *entry, int entryToWrite, char title[28], char *dataToWrite);
 void deleteItem(int indexToDelete);
 void readItem(int indexToRead, char *dataLoc);
 

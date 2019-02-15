@@ -25,8 +25,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Standard Includes
 #include <stdint.h>
-#include "driverlib.h"
 #include <stdbool.h>
+#include "MSP.h"
 
 #include "../inc/fram.h"
 #include "../inc/spiBase.h"
@@ -45,7 +45,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
-void writeFRAMData(struct FRAM_data writeInfo){
+void writeFRAMData(FRAM_data writeInfo){
     // Gather the requisite data:
     uint16_t sStartAdr  = writeInfo.startAdr;
     char     *sDataAdr  = writeInfo.dataAdr;
@@ -104,7 +104,7 @@ void writeFRAMData(struct FRAM_data writeInfo){
 
     ************************************************************/
 }
-void readFRAMData(struct FRAM_data readInfo){
+void readFRAMData(FRAM_data readInfo){
     // Gather the requisite data:
     uint16_t sStartAdr  = readInfo.startAdr;
     char     *sDataAdr  = readInfo.dataAdr;
@@ -134,10 +134,7 @@ void readFRAMData(struct FRAM_data readInfo){
 
 }
 
-inline int getNumEntries(void){
-    int max = MAX_ENTRIES;
-    return max;
-}
+
 inline uint16_t getEndOfIndex(void){
     int start = START_OF_INDEX;
     int max = MAX_ENTRIES;
@@ -145,7 +142,7 @@ inline uint16_t getEndOfIndex(void){
     return (start + (max * length) );
 }
 
-void initializeIndex(struct FRAM_libraryEntry *indexEntries){
+void initializeIndex(FRAM_libraryEntry *indexEntries){
     // WARNING: WILL EFFECTIVELY DELETE ALL DATA
 
     // Data will start at MAX_ENTRIES * (28+2+2) = MAX_ENTRIES * 32;
@@ -160,31 +157,37 @@ void initializeIndex(struct FRAM_libraryEntry *indexEntries){
                      };
 
     uint8_t i;
+    int k = 0;
+    uint16_t numEntries = MAX_ENTRIES;
+    char dummyChar = ' ';
 
+    // First, we create the array of structs which make up
+    // the index at the beginning of the FRAM
     for(i = 0; i < MAX_ENTRIES; i++){
-        //indexEntries[i].title[] = {'B','L','A','N','K'};
-        int k = 0;
         for(k = 0; k < 28; k++){
             indexEntries[i].title[k] = blank[k];
         }
-        indexEntries[i].startAdr = FRAMdataStartAdr;
+        indexEntries[i].startAdr = FRAMdataStartAdr; // dummy start adr of the end of the index
         indexEntries[i].length = 0;
     }
 
-    uint8_t numEntries = MAX_ENTRIES;
-    struct FRAM_data writeStartOfIndex;
+    // Next, we write the number of entries to the beginning of the FRAM.
+    FRAM_data writeStartOfIndex;
         writeStartOfIndex.startAdr = 0x0000;
         writeStartOfIndex.dataAdr = &numEntries;
         writeStartOfIndex.length = 1;
 
     writeFRAMData(writeStartOfIndex);
 
-
+    // Finally, we write the index to the FRAM.
+    for(i = 0; i < MAX_ENTRIES; i++){
+        newItem( &indexEntries[0], i, indexEntries[i].title, &dummyChar);
+    }
 
     return;
 }
-void readIndex(struct FRAM_libraryEntry *indexEntries){
-    struct FRAM_data temp;
+void readIndex(FRAM_libraryEntry *indexEntries){
+    FRAM_data temp;
     //uint16_t endOfIndex = MAX_ENTRIES;
     uint8_t i = 0;
 
@@ -233,7 +236,40 @@ void readIndex(struct FRAM_libraryEntry *indexEntries){
     }
 }
 
-void newItem(char title[28], char *dataLoc, struct FRAM_libraryEntry *indexEntries);
+void newItem(FRAM_libraryEntry *entry, int entryToWrite, char title[28], char *dataToWrite){
+    FRAM_data temp;
+
+    // Let's write the index entry!
+    // We're gonna start with the title.
+    int curDataAdr = START_OF_INDEX + ( entryToWrite * LENGTH_OF_ENTRY );
+    temp.startAdr = (uint16_t)curDataAdr;
+    temp.dataAdr = &entry[entryToWrite].title[0];
+    temp.length = 28;
+    writeFRAMData(temp);
+    curDataAdr += temp.length;
+
+    // The next two bytes are the starting
+    // address of the data
+    temp.startAdr = (uint16_t)curDataAdr;
+    temp.dataAdr = &entry[entryToWrite].startAdr;
+    temp.length = 2;
+    writeFRAMData(temp);
+    curDataAdr += 2;
+
+    // The next two bytes is the length of the data entry
+    // so we know how long to read for
+    temp.startAdr = (uint16_t)curDataAdr;
+    temp.dataAdr = &entry[entryToWrite].length;
+    temp.length = 2;
+    writeFRAMData(temp);
+    curDataAdr += 2;
+
+    // Now let's write the data!
+    temp.startAdr = entry[entryToWrite].startAdr;
+    temp.dataAdr = *dataToWrite;
+    temp.length - entry[entryToWrite].length;
+
+}
 void deleteItem(int indexToDelete);
 void readItem(int indexToRead, char *dataLoc);
 
