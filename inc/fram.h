@@ -30,6 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define MAX_ENTRIES     10      // Max number of entries; change based on what kind of data we're storing
 #define LENGTH_OF_ENTRY 32
 #define START_OF_INDEX  0x0002
+#define TITLE_LENGTH    28
 //----------
 
 typedef struct {
@@ -67,13 +68,15 @@ void readFRAMData(FRAM_data readInfo);
 inline int getNumEntries(void);
 inline uint16_t getEndOfIndex(void);
 
-void initializeIndex(FRAM_libraryEntry *indexEntries);
-void readIndex(FRAM_libraryEntry *indexEntries);
+void initializeIndex(FRAM_libraryEntry indexEntries[MAX_ENTRIES] );
+void readIndex(FRAM_libraryEntry indexEntries[MAX_ENTRIES] );
 void writeIndex();
 
-void newItem(FRAM_libraryEntry *entry, int entryToWrite, char title[28], char *dataToWrite);
-void deleteItem(int indexToDelete);
+int newItem(FRAM_libraryEntry entries[MAX_ENTRIES], int entryToWrite,
+             char title[TITLE_LENGTH], char *dataToWrite, int lengthOfData);
 void readItem(int indexToRead, char *dataLoc);
+uint16_t alloc_defrag(FRAM_libraryEntry indexEntries[MAX_ENTRIES],
+                      int mode, int index, int length );
 
 
 
