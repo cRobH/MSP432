@@ -33,6 +33,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define TITLE_LENGTH    28
 //----------
 
+// Uncomment to enable FRAM:
+//#define __ENABLE_FRAM_WRITE // disabled to prolong FRAM life
+
 typedef struct {
     // This is the FRAM starting address of where we will write/read the data
     uint16_t startAdr; // (FRAM ADDRESS)
@@ -68,14 +71,14 @@ void readFRAMData(FRAM_data readInfo);
 inline int getNumEntries(void);
 inline uint16_t getEndOfIndex(void);
 
-void initializeIndex(FRAM_libraryEntry indexEntries[MAX_ENTRIES] );
-void readIndex(FRAM_libraryEntry indexEntries[MAX_ENTRIES] );
+void initializeIndex(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES] );
+void readIndex(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES] );
 void writeIndex();
 
-int newItem(FRAM_libraryEntry entries[MAX_ENTRIES], int entryToWrite,
+int newItem(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int entryToWrite,
              char title[TITLE_LENGTH], char *dataToWrite, int lengthOfData);
 void readItem(int indexToRead, char *dataLoc);
-uint16_t alloc_defrag(FRAM_libraryEntry indexEntries[MAX_ENTRIES],
+uint16_t alloc_defrag(FRAM_libraryEntry *indexEntries[MAX_ENTRIES],
                       int mode, int index, int length );
 
 
