@@ -333,7 +333,7 @@ int newItem(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int entryToWrite,
 
     // Now let's write the data!
     temp.startAdr = (*indexEntries)[entryToWrite].startAdr;
-    temp.dataAdr = &dataToWrite;
+    temp.dataAdr = dataToWrite;
     temp.length = (*indexEntries)[entryToWrite].length;
     writeFRAMData(temp);
 
@@ -351,6 +351,7 @@ void readEntry(FRAM_libraryEntry entryToRead, char *dataLoc){
 }
 void deleteEntry( FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int entryToDelete){
     int k = 0;
+    FRAM_data temp;
 
     for(k=0; k<TITLE_LENGTH; k++){
         (*indexEntries)[entryToDelete].title[k] = 0;
@@ -359,6 +360,32 @@ void deleteEntry( FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int entryToDel
     // For now, we're not going to touch the adr so that the entry has a static sector for storage
     // (*indexEntries)[entryToDelete].startAdr =  SECTOR_START;
     (*indexEntries)[entryToDelete].length =  0;
+
+    // Let's write the index entry!
+    // We're gonna start with the title.
+    int curDataAdr = START_OF_INDEX + ( entryToDelete * LENGTH_OF_ENTRY );
+    temp.startAdr = (uint16_t)curDataAdr;
+    temp.dataAdr = &( (*indexEntries)[entryToDelete].title[0] );
+    temp.length = TITLE_LENGTH;
+    writeFRAMData(temp);
+    curDataAdr += temp.length;
+
+    // The next two bytes are the starting
+    // address of the data
+    temp.startAdr = (uint16_t)curDataAdr;
+    temp.dataAdr = &( (*indexEntries)[entryToDelete].startAdr );
+    temp.length = 2;
+    writeFRAMData(temp);
+    curDataAdr += 2;
+
+    // The next two bytes is the length of the data entry
+    // so we know how long to read for
+    temp.startAdr = (uint16_t)curDataAdr;
+    temp.dataAdr = &( (*indexEntries)[entryToDelete].length );
+    temp.length = 2;
+    writeFRAMData(temp);
+    curDataAdr += 2;
+
 }
 uint16_t alloc(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int length ){
     int i = 0; int k = 0; int j = 0;
