@@ -92,12 +92,14 @@ void initSPI(void){
 }
 
 void setCS(int state){
+#ifdef __ENABLE_SPI
     if( !state ){
         P2OUT |= 0x08;
     }
     if( state ){
         P2OUT &= ~0x08;
     }
+#endif
 }
 
 void transmitSPI(uint8_t data){

@@ -44,7 +44,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * Each entry will begin with a 28 char title, then the data
  *
  */
-
+//TODO: do i need these anymore?
 void writeFRAMData(FRAM_data writeInfo){
     // Gather the requisite data:
     uint16_t sStartAdr  = writeInfo.startAdr;
@@ -70,7 +70,7 @@ void writeFRAMData(FRAM_data writeInfo){
     int i = 0;
     char *curDataAdr;
 
-#ifdef __ENABLE_FRAM_WRITE
+
     //------------------- let's get down to business
     setCS(1);
     transmitSPI(opWREN);
@@ -87,7 +87,6 @@ void writeFRAMData(FRAM_data writeInfo){
     }
     setCS(0);                               // tell the FRAM we're done with it
 
-#endif
     return;
 
     /***************************************************************
@@ -135,32 +134,40 @@ void readFRAMData(FRAM_data readInfo){
 
 }
 
-
 inline uint16_t getEndOfIndex(void){
     int start = START_OF_INDEX;
     int max = MAX_ENTRIES;
-    int length = START_OF_INDEX;
+    int length = LENGTH_OF_ENTRY;
     return (start + (max * length) );
+}
+
+
+inline uint16_t sectorToAdr(int sector){
+    // TODO: verify
+    uint16_t adr = ( sector * 300) + SECTOR_START;
+    return adr;
+}
+inline int adrToSector(uint16_t adr){
+    // TODO: verify
+    int sector = ( adr  - SECTOR_START ) / SECTOR_SIZE;
+    return sector;
 }
 
 void initializeIndex(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES] ){
     // WARNING: WILL EFFECTIVELY DELETE ALL DATA
 
-
-
-    // Data will start at MAX_ENTRIES * (28+2+2) = MAX_ENTRIES * 32;
-    uint16_t FRAMdataStartAdr = getEndOfIndex();
     const char blank[TITLE_LENGTH] = {'B','L','A','N','K',
-                      '0','0','0','0','0',
-                      '0','0','0','0','0',
-                      '0','0','0','0','0',
-                      '0','0','0','0','0',
-                      '0','0','0'
-                     };
-    uint8_t i;
-    int k = 0;
+                                      ' ',' ',' ',' ',' ',
+                                      ' ',' ',' ',' ',' ',
+                                      ' ',' ',' ',' ',' ',
+                                      ' ',' ',' ',' ',' ',
+                                      ' ',' ',
+                                     };
+    int i; int k = 0;
+    FRAM_data temp;
     uint16_t numEntries = MAX_ENTRIES;
-    char dummyChar = ' ';
+    uint16_t sectorSize = SECTOR_SIZE;
+    uint16_t curDataAdr = START_OF_INDEX;
 
 
     // First, we create the array of structs which make up
@@ -169,42 +176,78 @@ void initializeIndex(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES] ){
         for(k = 0; k < 28; k++){
             (*indexEntries)[i].title[k] = blank[k];
         }
-        (*indexEntries)[i].startAdr = FRAMdataStartAdr; // dummy start adr of the end of the index
+        (*indexEntries)[i].startAdr = SECTOR_START; // dummy start adr of the end of the index
         (*indexEntries)[i].length = 0;
+
+        // The first 28 bytes of the data is
+        // the title. Read 28 bits and store it to data.
+        temp.startAdr = curDataAdr;
+        temp.dataAdr = &(*indexEntries)[i].title[0];
+        temp.length = TITLE_LENGTH;
+        writeFRAMData(temp);
+        curDataAdr += temp.length;
+
+        // The next two bytes are the starting
+        // address of the data
+        temp.startAdr = curDataAdr;
+        temp.dataAdr = &(*indexEntries)[i].startAdr;
+        temp.length = 2;
+        writeFRAMData(temp);
+        curDataAdr += 2;
+
+        // The next two bytes is the length of the data entry
+        // so we know how long to read for
+        temp.startAdr = curDataAdr;
+        temp.dataAdr = &(*indexEntries)[i].length;
+        temp.length = 2;
+        writeFRAMData(temp);
+        curDataAdr += 2;
+
     }
 
-
-
+    char clear[4] = {0,0,0,0};
+    FRAM_data clearFirstFour;
+        clearFirstFour.startAdr = 0x0000;
+        clearFirstFour.dataAdr  = &clear[0];
+        clearFirstFour.length   = 4;
+    writeFRAMData(clearFirstFour);
     // Next, we write the number of entries to the beginning of the FRAM.
     FRAM_data writeStartOfIndex;
         writeStartOfIndex.startAdr = 0x0000;
         writeStartOfIndex.dataAdr = &numEntries;
-        writeStartOfIndex.length = 1;
-
+        writeStartOfIndex.length = 2;
     writeFRAMData(writeStartOfIndex);
+    // Next, we write the sector size after the number of entries
+    FRAM_data writeSectorSize;
+        writeSectorSize.startAdr = 0x0002;
+        writeSectorSize.dataAdr = &sectorSize;
+        writeSectorSize.length = 2;
+    writeFRAMData(writeSectorSize);
 
-    // Finally, we write the index to the FRAM.
-    for(i = 0; i < MAX_ENTRIES; i++){
-        newItem( indexEntries, i, blank, &dummyChar, 0);
-    }
 
     return;
 }
 void readIndex(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES]){
     FRAM_data temp;
-    //uint16_t endOfIndex = MAX_ENTRIES;
     uint8_t i = 0;
+    int numEntries, sectorSize;
 
 
     // First, we read the number of entries the FRAM is
     // currently initialized to. If we ever change it.
-    char numFRAMInit = 0;
+    uint8_t tempRead[2];
     temp.startAdr = 0x00;
-    temp.dataAdr = &numFRAMInit;
-    temp.length = 1;
+    temp.dataAdr = &tempRead[0];
+    temp.length = 2;
     readFRAMData(temp);
-
-    if(numFRAMInit != MAX_ENTRIES){
+    numEntries = (tempRead[1] << 8) | (tempRead[0]);
+    if(numEntries != MAX_ENTRIES){
+        while(1); // Hold. The FRAM is not initialized for this number of entries.
+    }
+    temp.startAdr = 0x0002;
+    readFRAMData(temp);
+    sectorSize = (tempRead[1] << 8) | (tempRead[0]);
+    if(sectorSize != SECTOR_SIZE){
         while(1); // Hold. The FRAM is not initialized for this number of entries.
     }
 
@@ -245,11 +288,9 @@ int newItem(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int entryToWrite,
 
     FRAM_data temp;
     int i = 0;
-    // TODO: does the *entry pull the whole array?
 
     // Error check:
     if( entryToWrite > (MAX_ENTRIES - 1) ){
-
         return 0;
     }
 
@@ -257,7 +298,7 @@ int newItem(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int entryToWrite,
     for(i=0;i<TITLE_LENGTH;i++){
         (*indexEntries)[entryToWrite].title[i] = title[i];
     }
-    (*indexEntries)[entryToWrite].startAdr = 0;//TODO: get adr from defrag
+    (*indexEntries)[entryToWrite].startAdr = alloc(indexEntries, lengthOfData);
     (*indexEntries)[entryToWrite].length = lengthOfData;
 
     // Let's write the index entry!
@@ -269,12 +310,10 @@ int newItem(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int entryToWrite,
     writeFRAMData(temp);
     curDataAdr += temp.length;
 
-    alloc_defrag( indexEntries, 0, entryToWrite, lengthOfData);
-
     // The next two bytes are the starting
     // address of the data
     temp.startAdr = (uint16_t)curDataAdr;
-    // TODO: what is this? -> entries[entryToWrite].startAdr;
+    temp.dataAdr = &( (*indexEntries)[entryToWrite].startAdr );
     temp.length = 2;
     writeFRAMData(temp);
     curDataAdr += 2;
@@ -291,120 +330,147 @@ int newItem(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int entryToWrite,
     temp.startAdr = (*indexEntries)[entryToWrite].startAdr;
     temp.dataAdr = &dataToWrite;
     temp.length = (*indexEntries)[entryToWrite].length;
+    writeFRAMData(temp);
 
 
     return 1;
 }
-void deleteItem(int indexToDelete);
-void readItem(int indexToRead, char *dataLoc);
-uint16_t alloc_defrag(FRAM_libraryEntry *indexEntries[MAX_ENTRIES],
-                      int mode, int index, int length ){
-    uint16_t sStartAdr[MAX_ENTRIES];
-    uint16_t sLength[MAX_ENTRIES];
-    uint16_t sEndAdr[MAX_ENTRIES];
+void readEntry(FRAM_libraryEntry entryToRead, char *dataLoc){
+    FRAM_data temp;
+        temp.startAdr = entryToRead.startAdr;
+        temp.dataAdr  = dataLoc;
+        temp.length   = entryToRead.length;
+    readFRAMData(temp);
+
+    return;
+}
+void deleteEntry( FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int entryToDelete){
     int i = 0; int k = 0;
 
-    // Do some error checking:
-    for(i=0; i < MAX_ENTRIES; i++){
-        sStartAdr[i] = (*indexEntries)[i].startAdr;
-        sLength[i] = (*indexEntries)[i].length;
-        sEndAdr[i] = ( sStartAdr[i] + sLength[i] );
-
-        if(sEndAdr[i] >= (*indexEntries)[i+1].startAdr){
-            // check if the ending address of an entry is beyond
-            // the starting address of the next. if so, we have some problems.
-            // 0xFFFF is an invalid address, so hopefully it'll get caught.
-            return 0xFFFF;
+    for(i=entryToDelete;i<(MAX_ENTRIES-1);i++){
+        for(k=0; k<TITLE_LENGTH; k++){
+            (*indexEntries)[i].title[k] = (*indexEntries)[i+1].title[k];
         }
+        (*indexEntries)[i].startAdr =  (*indexEntries)[i+1].startAdr;
+        (*indexEntries)[i].length =  (*indexEntries)[i+1].length;
     }
+    for(k=0; k<TITLE_LENGTH; k++){
+        (*indexEntries)[MAX_ENTRIES-1].title[k] = 0;
+    }
+    (*indexEntries)[MAX_ENTRIES-1].startAdr =  SECTOR_START;
+    (*indexEntries)[MAX_ENTRIES-1].length =  0;
+}
+uint16_t alloc(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int length ){
+    int i = 0; int k = 0; int j = 0;
+    int consecutiveEmptySectors = 0;
+    int lastSectorState = 0;
+    FRAM_data temp;
+    char buffer[300];
 
-    if(mode == 1){
-        // defrag/delete
-        // so if k=indextodelete,
-        // we need to move k+1 to k's location
-        // then k+n until n=max
+    int numberOfSectors = (MEM_SIZE_BYTES - SECTOR_START) / SECTOR_SIZE;
+    int sectorsToWrite = (length / SECTOR_SIZE) + 1;
+    char sectorMap[(MEM_SIZE_BYTES - SECTOR_START) / SECTOR_SIZE] = {0}; // the value in the cell is the index# written there;
+                                     // an ASCII value of 0 or ' ' indicates it is empty
+    int freeSectors = getFreeSectors( indexEntries );
 
-        for(i=index; i<(MAX_ENTRIES-1); i++){
-            char tempChar;
-            FRAM_data temp;
-            uint16_t readAdr = sStartAdr[i + 1];
-            uint16_t writeAdr = sStartAdr[i];
-            uint16_t readLength = sLength[i];
-            temp.startAdr = readAdr;
-            temp.dataAdr = &tempChar;
-            temp.length = 1;
-            int k = 0;
-
-            for(k=0; k<readLength; k++){
-                // First we read:
-                readFRAMData(temp);
-                // Then we write:
-                temp.startAdr = writeAdr;
-                writeFRAMData(temp);
-                readAdr += 1;
-                writeAdr += 1;
-            }
-
-            for(k=0;k<TITLE_LENGTH;k++){
-                (*indexEntries)[i].title[k] = 0;
-            }
-            (*indexEntries)[i].startAdr = (*indexEntries)[i+1].startAdr;
-            (*indexEntries)[i].length = (*indexEntries)[i+1].length;
-        }
-        for(k=0;k<TITLE_LENGTH;k++){
-            (*indexEntries)[MAX_ENTRIES].title[k] = 0;
-        }
-        (*indexEntries)[MAX_ENTRIES].startAdr = ((*indexEntries)[MAX_ENTRIES].startAdr - 1);
-        (*indexEntries)[MAX_ENTRIES].length = 0;
-
-    }else if(mode == 0){
-        // alloc/add
-        if(sEndAdr[index] < sStartAdr[index + 1]){
-
-            for(i=index; i<(MAX_ENTRIES-1); i++){
-                char tempChar;
-                FRAM_data temp;
-                uint16_t readAdr = sStartAdr[i + 1];
-                uint16_t writeAdr = sEndAdr[i];
-                uint16_t readLength = sLength[i];
-                temp.startAdr = readAdr;
-                temp.dataAdr = &tempChar;
-                temp.length = 1;
-                int k = 0;
-
-                for(k=0; k<readLength; k++){
-                    // First we read:
-                    readFRAMData(temp);
-                    // Then we write:
-                    temp.startAdr = writeAdr;
-                    writeFRAMData(temp);
-                    readAdr += 1;
-                    writeAdr += 1;
-                }
-
-            }
-
-            return sStartAdr[index];
-
-        }else if(sEndAdr[index] == (sStartAdr[index + 1] - 1)){
-            // somehow you manage the impossible.
-            // you are replace data with data of the same size.
-            // lucky you, we do nothing. we're just going to return
-            // the starting address of the slot you're writing to.
-            return sStartAdr[index];
-        }else{
-            // god only knows how you ended up in here
-            return 0xFFFF;
-        }
-
-
-
-    }else{
-        // 0 and 1 are the only two valid modes
+    if( sectorsToWrite > freeSectors){
+        // Insufficient space.
         return 0xFFFF;
     }
 
+    for(i=0; i<MAX_ENTRIES; i++){
+        int startSector = adrToSector( (*indexEntries)[i].startAdr );
+        int lengthInSectors = 0;
+        if( (*indexEntries)[i].length != 0){
+            lengthInSectors = ( (*indexEntries)[i].length / SECTOR_SIZE ) + 1;
+        }
+        for(k=startSector; k<lengthInSectors; k++){
+            sectorMap[k] = 1 + '0'; // turn int into a char
+        }
+    }
+    for(i=0; i<numberOfSectors; i++){
+        if( (sectorMap[i] == 0) && (lastSectorState == 0) ){
+            consecutiveEmptySectors++;
+        }
+        if(consecutiveEmptySectors >= sectorsToWrite){
+            return sectorToAdr( i );
+        }
+        lastSectorState = sectorMap[i];
+    }
+
+/*
+    while(consecutiveEmptySectors < sectorsToWrite){
+        for(i=0; i<MAX_ENTRIES; i++){
+            int startSector = adrToSector( (*indexEntries)[i].startAdr );
+            int lengthInSectors = 0;
+            if( (*indexEntries)[i].length != 0){
+                lengthInSectors = ( (*indexEntries)[i].length / SECTOR_SIZE ) + 1;
+            }
+            for(k=startSector; k<lengthInSectors; k++){
+                sectorMap[k] = 1 + '0'; // turn int into a char
+            }
+        }
+        for(i=0; i<numberOfSectors; i++){
+            if( (sectorMap[i] == 0) && (lastSectorState == 0) ){
+                consecutiveEmptySectors++;
+            }
+            if(consecutiveEmptySectors >= sectorsToWrite){
+                return sectorToAdr( i );
+            }
+            lastSectorState = sectorMap[i];
+        }
+        for(i=0; i<numberOfSectors; i++){
+            // TODO: verify this works
+            while(1);
+            if(sectorMap[i] == 0){
+                k = 0; int flag = 0;
+                while(flag == 0){
+                    if(sectorMap[i+k] != 0){
+                        // copy i+k to i
+                        temp.startAdr = (*indexEntries)[j].startAdr;
+                        temp.dataAdr = &buffer[0];
+                        temp.length = (*indexEntries)[j].length;
+                        readFRAMData(temp);
+                        (*indexEntries)[j].startAdr = sectorToAdr(i);
+
+                        temp.startAdr = sectorToAdr(i);
+                        writeFRAMData(temp);
+                        flag = 1;
+                    }else{
+                        k++;
+                    }
+                }
+            }
+        }
+    }
+*/
     return 0xFFFF;
+}
+
+int getFreeSectors(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES]){
+    char sectorMap[(MEM_SIZE_BYTES - SECTOR_START) / SECTOR_SIZE] = {0};
+    int numberOfSectors = (MEM_SIZE_BYTES - SECTOR_START) / SECTOR_SIZE;
+    int i = 0; int k = 0;
+    int emptySectors = 0;
+
+    for(i=0; i<MAX_ENTRIES; i++){
+        int startSector = adrToSector( (*indexEntries)[i].startAdr );
+        int lengthInSectors = 0;
+        if( (*indexEntries)[i].length != 0){
+            lengthInSectors = ( (*indexEntries)[i].length / SECTOR_SIZE ) + 1;
+        }
+        for(k=startSector; k<lengthInSectors; k++){
+            sectorMap[k] = 1 + '0'; // turn int into a char
+        }
+    }
+
+    for(i=0; i<numberOfSectors; i++){
+        if( sectorMap[i] == 0 ){
+            emptySectors++;
+        }
+    }
+
+    return emptySectors;
 }
 
 uint8_t readStatusReg(void){

@@ -28,13 +28,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define opRDID  0b10011111    // Read Device ID
 //----------
 #define MAX_ENTRIES     10      // Max number of entries; change based on what kind of data we're storing
-#define LENGTH_OF_ENTRY 32
-#define START_OF_INDEX  0x0002
+#define LENGTH_OF_ENTRY 32      // = title_length + 2(length) + 2(addr)
+#define START_OF_INDEX  0x0004
 #define TITLE_LENGTH    28
+#define SECTOR_START    0x0144  // (max_entries * length_of_entries) + start_of_index = 10*32 + 4 = 324 = 0x0144
+#define SECTOR_SIZE     300
+#define MEM_SIZE_BYTES  8000
 //----------
 
-// Uncomment to enable FRAM:
-//#define __ENABLE_FRAM_WRITE // disabled to prolong FRAM life
 
 typedef struct {
     // This is the FRAM starting address of where we will write/read the data
@@ -60,6 +61,11 @@ typedef struct {
     uint16_t length;
 } FRAM_libraryEntry;
 
+// TODO: see if i need this in the future
+// Globals:
+    // Since this boy is pretty beefy, I'm only going to declare it once
+    // and everyone can share.
+    //char universalBuffer[300];
 
 
 
@@ -70,18 +76,19 @@ void readFRAMData(FRAM_data readInfo);
 // Small inlines to get hardcoded data:
 inline int getNumEntries(void);
 inline uint16_t getEndOfIndex(void);
+inline uint16_t sectorToAdr(int sector);
+inline int adrToSector(uint16_t adr);
 
 void initializeIndex(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES] );
 void readIndex(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES] );
-void writeIndex();
 
 int newItem(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int entryToWrite,
              char title[TITLE_LENGTH], char *dataToWrite, int lengthOfData);
-void readItem(int indexToRead, char *dataLoc);
-uint16_t alloc_defrag(FRAM_libraryEntry *indexEntries[MAX_ENTRIES],
-                      int mode, int index, int length );
-
-
+void readEntry(FRAM_libraryEntry entryToRead, char *dataLoc);
+void deleteEntry( FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int entryToDelete);
+void streamSector(FRAM_libraryEntry entryToRead);
+uint16_t alloc(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int length );
+int getFreeSectors(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES]);
 
 uint8_t readStatusReg(void);
 uint32_t readDeviceID(void);
