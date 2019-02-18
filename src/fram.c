@@ -176,7 +176,7 @@ void initializeIndex(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES] ){
         for(k = 0; k < 28; k++){
             (*indexEntries)[i].title[k] = blank[k];
         }
-        (*indexEntries)[i].startAdr = SECTOR_START; // dummy start adr of the end of the index
+        (*indexEntries)[i].startAdr = (i * SECTOR_SIZE) + SECTOR_START; // dummy start adr of the end of the index
         (*indexEntries)[i].length = 0;
 
         // The first 28 bytes of the data is
@@ -298,7 +298,7 @@ int newItem(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int entryToWrite,
     for(i=0;i<TITLE_LENGTH;i++){
         (*indexEntries)[entryToWrite].title[i] = title[i];
     }
-    (*indexEntries)[entryToWrite].startAdr = alloc(indexEntries, lengthOfData);
+    (*indexEntries)[entryToWrite].startAdr = (entryToWrite * SECTOR_SIZE) + SECTOR_START;
     (*indexEntries)[entryToWrite].length = lengthOfData;
 
     // Let's write the index entry!
@@ -345,20 +345,13 @@ void readEntry(FRAM_libraryEntry entryToRead, char *dataLoc){
     return;
 }
 void deleteEntry( FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int entryToDelete){
-    int i = 0; int k = 0;
+    int k = 0;
 
-    for(i=entryToDelete;i<(MAX_ENTRIES-1);i++){
-        for(k=0; k<TITLE_LENGTH; k++){
-            (*indexEntries)[i].title[k] = (*indexEntries)[i+1].title[k];
-        }
-        (*indexEntries)[i].startAdr =  (*indexEntries)[i+1].startAdr;
-        (*indexEntries)[i].length =  (*indexEntries)[i+1].length;
-    }
     for(k=0; k<TITLE_LENGTH; k++){
-        (*indexEntries)[MAX_ENTRIES-1].title[k] = 0;
+        (*indexEntries)[entryToDelete].title[k] = 0;
     }
-    (*indexEntries)[MAX_ENTRIES-1].startAdr =  SECTOR_START;
-    (*indexEntries)[MAX_ENTRIES-1].length =  0;
+    (*indexEntries)[entryToDelete].startAdr =  SECTOR_START;
+    (*indexEntries)[entryToDelete].length =  0;
 }
 uint16_t alloc(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int length ){
     int i = 0; int k = 0; int j = 0;
