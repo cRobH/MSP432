@@ -1,7 +1,7 @@
 /************************************************************************
 
 name:           SPI Base Library
-desription:     Provides basic read/write operations over SPI, specifically the UCB0 bus
+description:     Provides basic read/write operations over SPI, specifically the UCB0 bus
                 of the MSP432
 auhor:          generalannoyance
 
@@ -25,7 +25,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-
+// Uncomment to enable SPI:
+#define __ENABLE_SPI // disabled to prolong FRAM life
 
 void initSPI(void);
 void setCS(int state);

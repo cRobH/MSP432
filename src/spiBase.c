@@ -25,8 +25,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Standard Includes
 #include <stdint.h>
-#include "driverlib.h"
 #include <stdbool.h>
+#include "MSP.h"
 
 #include "../inc/spiBase.h"
 
@@ -45,15 +45,30 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 void initSPI(void){
     // UCB0 CONTROL WORD REGISTER 0
     UCB0CTLW0 = 0x0001; // Hold SPI bus in reset state while
-    // SPI Mode: Clock Phase/Polarity: 01
-    //           MSB First
-    //           8-bit
-    //           MSP as Master
-    //           3-pin Mode
-    //           Synchronous
-    //           SMCLK as clock source
-    // => 0b1110100111000001 = 0xE9C1
-    UCB0CTLW0 = 0x69C1;
+    /*
+     *  Clock Phase Select      0   15      Data captured on rising edge, changed on following
+     *  Clock Polarity Select   1   14      inactive state is high
+     *  MSB First/Last          1   13      MSB first
+     *  Character Length        0   12      8 bit
+     *
+     *  Master Mode Select      1   11      Master
+     *  SPI Mode                0   10      SPI Mode 0 - 3 Pin
+     *  SPI Mode                0   9       SPI Mode 0 - 3 Pin
+     *  Synchronus Mode         1   8       Synchronus Mode
+     *
+     *  Clock Source Select     0   7       SMCLK or 1
+     *  Clock Source Select     1   6       SMCLK    1 for ACLK
+     *  Reserved                -   5
+     *  Reserved                -   4
+     *
+     *  Reserved                -   3
+     *  Reserved                -   2
+     *  STE Mode In Master      0   1       Ignored in 3 wire mode
+     *  Software Reset Enable   1   0       SPI Is disable (for now)
+     *
+     */
+
+    UCB0CTLW0 = 0x6941;
 
     // UCB0 BIT RATE CONTROL WORD REGISTER
     // 3 MHz / 1 = 3 MHz
@@ -70,30 +85,32 @@ void initSPI(void){
     P1SEL0 |=  0xE0; // Set P1.5, 1.6, & 1.7 as SPI
     P1SEL1 &= ~0xE0;
 
-    P2SEL0 &= ~0x04; // Set P2.3 as GPIO
-    P2SEL1 &= ~0x04; // This is the CS pin
-    P2DIR |=   0x04;
-    P2OUT |=   0x04;
+    P2SEL0 &= ~0x08; // Set P2.3 as GPIO
+    P2SEL1 &= ~0x08; // This is the CS pin
+    P2DIR |=   0x08;
+    P2OUT |=   0x08;
 }
 
 void setCS(int state){
-    if( state ){
-        P2OUT |= 0x04;
-    }
+#ifdef __ENABLE_SPI
     if( !state ){
-        P2OUT &= ~0x04;
+        P2OUT |= 0x08;
     }
+    if( state ){
+        P2OUT &= ~0x08;
+    }
+#endif
 }
 
 void transmitSPI(uint8_t data){
 
-    setCS(1);
+    //setCS(1);
     while( !(UCB0IFG & 2) ); // Wait for Transmit buffer to empty
 
     UCB0TXBUF = data; //TRANSMIT BUFFER
 
     while( UCB0STATW & 1 ); // Wait for transmit to finish
-    setCS(0);
+    //setCS(0);
 }
 
 inline int  checkForReceived(void){
@@ -105,17 +122,9 @@ inline void clearRxFlag(void){
 }
 
 uint8_t receiveSPI(void){
-    int dataWaiting = checkForReceived();
-    uint8_t rxData;
-
-    if( dataWaiting  ){
-        // there is an interrupt flag
-        rxData = UCB0RXBUF;
-    }
-    else if( !dataWaiting ){
-        // there is no Interrupt flag
-        while(1);
-    }
+    uint8_t rxData = 0;
+    transmitSPI(0x00);
+    rxData = UCB0RXBUF;
     clearRxFlag();
     return rxData;
 }
