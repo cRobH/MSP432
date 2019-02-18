@@ -176,6 +176,9 @@ void initializeIndex(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES] ){
         for(k = 0; k < 28; k++){
             (*indexEntries)[i].title[k] = blank[k];
         }
+        // TODO: Dynamically allocate memory locations on the FRAM.
+        // This line will hardcode each entry to a specific locations on the FRAM. 
+        // This /should/ be END_OF_INDEX for later allocation with alloc()
         (*indexEntries)[i].startAdr = (i * SECTOR_SIZE) + SECTOR_START; // dummy start adr of the end of the index
         (*indexEntries)[i].length = 0;
 
@@ -298,6 +301,8 @@ int newItem(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int entryToWrite,
     for(i=0;i<TITLE_LENGTH;i++){
         (*indexEntries)[entryToWrite].title[i] = title[i];
     }
+    // TODO: dynamically allocate memory on the FRAM
+    // This should be a call to alloc() to find and/or make space on the FRAM
     (*indexEntries)[entryToWrite].startAdr = (entryToWrite * SECTOR_SIZE) + SECTOR_START;
     (*indexEntries)[entryToWrite].length = lengthOfData;
 
@@ -350,7 +355,9 @@ void deleteEntry( FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int entryToDel
     for(k=0; k<TITLE_LENGTH; k++){
         (*indexEntries)[entryToDelete].title[k] = 0;
     }
-    (*indexEntries)[entryToDelete].startAdr =  SECTOR_START;
+    // TODO: reassign the starting address to SECTOR_START so that alloc() functions correctly
+    // For now, we're not going to touch the adr so that the entry has a static sector for storage
+    // (*indexEntries)[entryToDelete].startAdr =  SECTOR_START;
     (*indexEntries)[entryToDelete].length =  0;
 }
 uint16_t alloc(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int length ){
