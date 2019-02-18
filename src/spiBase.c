@@ -25,7 +25,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // Standard Includes
 #include <stdint.h>
-#include "driverlib.h"
 #include <stdbool.h>
 
 #include "../inc/spiBase.h"

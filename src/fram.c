@@ -26,7 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Standard Includes
 #include <stdint.h>
 #include <stdbool.h>
-#include "MSP.h"
+#include "msp.h"
 
 #include "../inc/fram.h"
 #include "../inc/spiBase.h"
@@ -176,7 +176,7 @@ void initializeIndex(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES] ){
         for(k = 0; k < 28; k++){
             (*indexEntries)[i].title[k] = blank[k];
         }
-        (*indexEntries)[i].startAdr = SECTOR_START; // dummy start adr of the end of the index
+        (*indexEntries)[i].startAdr = (i * SECTOR_SIZE) + SECTOR_START; // dummy start adr of the end of the index
         (*indexEntries)[i].length = 0;
 
         // The first 28 bytes of the data is
@@ -298,7 +298,7 @@ int newItem(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int entryToWrite,
     for(i=0;i<TITLE_LENGTH;i++){
         (*indexEntries)[entryToWrite].title[i] = title[i];
     }
-    (*indexEntries)[entryToWrite].startAdr = alloc(indexEntries, lengthOfData);
+    (*indexEntries)[entryToWrite].startAdr = (entryToWrite * SECTOR_SIZE) + SECTOR_START;
     (*indexEntries)[entryToWrite].length = lengthOfData;
 
     // Let's write the index entry!
