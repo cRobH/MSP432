@@ -176,10 +176,8 @@ void initializeIndex(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES] ){
         for(k = 0; k < 28; k++){
             (*indexEntries)[i].title[k] = blank[k];
         }
-        // TODO: Dynamically allocate memory locations on the FRAM.
-        // This line will hardcode each entry to a specific locations on the FRAM. 
-        // This /should/ be END_OF_INDEX for later allocation with alloc()
-        (*indexEntries)[i].startAdr = (i * SECTOR_SIZE) + SECTOR_START; // dummy start adr of the end of the index
+
+        (*indexEntries)[i].startAdr = 0xFFFF; // dummy start adr of the end of the index
         (*indexEntries)[i].length = 0;
 
         // The first 28 bytes of the data is
@@ -301,10 +299,10 @@ int newItem(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int entryToWrite,
     for(i=0;i<TITLE_LENGTH;i++){
         (*indexEntries)[entryToWrite].title[i] = title[i];
     }
+    (*indexEntries)[entryToWrite].length = lengthOfData;
     // TODO: dynamically allocate memory on the FRAM
     // This should be a call to alloc() to find and/or make space on the FRAM
-    (*indexEntries)[entryToWrite].startAdr = (entryToWrite * SECTOR_SIZE) + SECTOR_START;
-    (*indexEntries)[entryToWrite].length = lengthOfData;
+    (*indexEntries)[entryToWrite].startAdr = alloc(indexEntries, lengthOfData);
 
     // Let's write the index entry!
     // We're gonna start with the title.
@@ -332,7 +330,7 @@ int newItem(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int entryToWrite,
     curDataAdr += 2;
 
     // Now let's write the data!
-    temp.startAdr = (*indexEntries)[entryToWrite].startAdr;
+     temp.startAdr = (*indexEntries)[entryToWrite].startAdr;
     temp.dataAdr = dataToWrite;
     temp.length = (*indexEntries)[entryToWrite].length;
     writeFRAMData(temp);
@@ -358,7 +356,7 @@ void deleteEntry( FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int entryToDel
     }
     // TODO: reassign the starting address to SECTOR_START so that alloc() functions correctly
     // For now, we're not going to touch the adr so that the entry has a static sector for storage
-    // (*indexEntries)[entryToDelete].startAdr =  SECTOR_START;
+    (*indexEntries)[entryToDelete].startAdr =  0xFFFF;
     (*indexEntries)[entryToDelete].length =  0;
 
     // Let's write the index entry!
@@ -412,65 +410,23 @@ uint16_t alloc(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES], int length ){
             lengthInSectors = ( (*indexEntries)[i].length / SECTOR_SIZE ) + 1;
         }
         for(k=startSector; k<lengthInSectors; k++){
-            sectorMap[k] = 1 + '0'; // turn int into a char
+            sectorMap[k] = i + '0'; // turn int into a char
         }
     }
     for(i=0; i<numberOfSectors; i++){
-        if( (sectorMap[i] == 0) && (lastSectorState == 0) ){
+        if( sectorMap[i] == 0 ){
             consecutiveEmptySectors++;
+        }else if( sectorMap[i] != 0){
+            consecutiveEmptySectors = 0;
         }
         if(consecutiveEmptySectors >= sectorsToWrite){
-            return sectorToAdr( i );
-        }
-        lastSectorState = sectorMap[i];
-    }
-
-/*
-    while(consecutiveEmptySectors < sectorsToWrite){
-        for(i=0; i<MAX_ENTRIES; i++){
-            int startSector = adrToSector( (*indexEntries)[i].startAdr );
-            int lengthInSectors = 0;
-            if( (*indexEntries)[i].length != 0){
-                lengthInSectors = ( (*indexEntries)[i].length / SECTOR_SIZE ) + 1;
-            }
-            for(k=startSector; k<lengthInSectors; k++){
-                sectorMap[k] = 1 + '0'; // turn int into a char
-            }
-        }
-        for(i=0; i<numberOfSectors; i++){
-            if( (sectorMap[i] == 0) && (lastSectorState == 0) ){
-                consecutiveEmptySectors++;
-            }
-            if(consecutiveEmptySectors >= sectorsToWrite){
-                return sectorToAdr( i );
-            }
-            lastSectorState = sectorMap[i];
-        }
-        for(i=0; i<numberOfSectors; i++){
-            // TODO: verify this works
-            while(1);
-            if(sectorMap[i] == 0){
-                k = 0; int flag = 0;
-                while(flag == 0){
-                    if(sectorMap[i+k] != 0){
-                        // copy i+k to i
-                        temp.startAdr = (*indexEntries)[j].startAdr;
-                        temp.dataAdr = &buffer[0];
-                        temp.length = (*indexEntries)[j].length;
-                        readFRAMData(temp);
-                        (*indexEntries)[j].startAdr = sectorToAdr(i);
-
-                        temp.startAdr = sectorToAdr(i);
-                        writeFRAMData(temp);
-                        flag = 1;
-                    }else{
-                        k++;
-                    }
-                }
-            }
+            return sectorToAdr( i - (sectorsToWrite - 1) );
         }
     }
-*/
+    // We will only continue if there were not enough consecutive free sectors.
+
+
+
     return 0xFFFF;
 }
 
