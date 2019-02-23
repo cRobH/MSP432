@@ -23,14 +23,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ************************************************************************/
 
-void initUART2(void);
-void EUSCIA2_IRQHandler(void);
-int parseCommand(void);
-int myAtoi(char *str);
+void initUART_A3(void);
+void EUSCIA3_IRQHandler(void);
+void transmitUART(uint8_t data);
+uint8_t receiveUART(void);
 
 
-int serial_flag;                           //setting needed variables
-char received_com[340];
-char inByte;
-char outByte = 'h';
-int testflag;
