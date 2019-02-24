@@ -30,6 +30,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdbool.h>
 #include "../inc/uartBase.h"
 
+/*
+ * To enable interrupts, use the following commands:
+ *      __disable_irq();
+ *      NVIC_SetPriority(EUSCIAx_IRQn, 3);
+ *      NVIC_EnableIRQ(EUSCIAx_IRQn);
+ *      __enable_irq();
+ *
+ *  Where x is the EUSCI interface you are trying to interrupt
+ */
+
+
 //----------------------------------------------------------------------------
 #ifdef __ENABLE_UCA0
 void initUART_A0(void){
@@ -39,13 +50,8 @@ void initUART_A0(void){
     UCA1BRW      =  312;        // 3000000/9600
     P1SEL0      |=  0x0C;       // p1.2, p1.3 for UART
     P1SEL1      &=  ~0x0C;
-    UCA1IE      |=  0x01;       //enabling interrupt
     UCA1CTLW0   &=  ~0x01;      //disable reset mode
-    return;
-}
-
-void EUSCIA0_IRQHandler(void){
-
+    UCA1IE      |=  0x01;       //enabling interrupt
     return;
 }
 
@@ -72,13 +78,8 @@ void initUART_A1(void){
     UCA1BRW      =  312;        // 3000000/9600
     P2SEL0      |=  0x0C;       //p9.6, p9.7 for UART
     P2SEL1      &=  ~0x0C;
-    UCA1IE      |=  0x01;       //enabling interrupt
     UCA1CTLW0   &=  ~0x01;      //disable reset mode
-    return;
-}
-
-void EUSCIA1_IRQHandler(void){
-
+    UCA1IE      |=  0x01;       //enabling interrupt
     return;
 }
 
@@ -105,13 +106,8 @@ void initUART_A2(void){
     UCA2BRW      =  312;        // 3000000/9600
     P3SEL0      |=  0x0C;       //p9.6, p9.7 for UART
     P3SEL1      &=  ~0x0C;
-    UCA2IE      |=  0x01;       //enabling interrupt
     UCA2CTLW0   &=  ~0x01;      //disable reset mode
-    return;
-}
-
-void EUSCIA2_IRQHandler(void){
-
+    UCA2IE      |=  0x01;       //enabling interrupt
     return;
 }
 
@@ -138,22 +134,11 @@ void initUART_A3(void){
     UCA3BRW      =  312;        // 3000000/9600
     P9SEL0      |=  0xC0;       //p9.6, p9.7 for UART
     P9SEL1      &=  ~0xC0;
-    UCA3IE      |=  0x01;       //enable Receive Interrupt
     UCA3CTLW0   &=  ~0x01;      //disable reset mode
+    UCA3IE      =  0x01;       //enable Receive Interrupt
     return;
 }
 
-void EUSCIA3_IRQHandler(void){
-
-    transmitUART_A3('\n');
-    transmitUART_A3('\n');
-    char read = receiveUART_A3();
-    transmitUART_A3(read);
-    transmitUART_A3('\n');
-    transmitUART_A3('\n');
-
-    return;
-}
 
 void transmitUART_A3(uint8_t data){
 

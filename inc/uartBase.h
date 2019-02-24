@@ -33,7 +33,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //      P1.2 -> RX
 //      P1.3 -> TX
 void initUART_A0(void);
-void EUSCIA0_IRQHandler(void);
 void transmitUART_A0(uint8_t data);
 uint8_t receiveUART_A0(void);
 #endif
@@ -44,7 +43,6 @@ uint8_t receiveUART_A0(void);
 //      P2.2 -> RX
 //      P2.3 -> TX
 void initUART_A1(void);
-void EUSCIA1_IRQHandler(void);
 void transmitUART_A1(uint8_t data);
 uint8_t receiveUART_A1(void);
 #endif
@@ -52,10 +50,9 @@ uint8_t receiveUART_A1(void);
 #ifdef __ENABLE_UCA2
 //-------------------------------
 // EUSCI A2 Uses Pins:
-//      P3.2 -> RX
+//      P3.2 -> RX+
 //      P3.3 -> TX
 void initUART_A2(void);
-void EUSCIA2_IRQHandler(void);
 void transmitUART_A2(uint8_t data);
 uint8_t receiveUART_A2(void);
 #endif
@@ -66,7 +63,6 @@ uint8_t receiveUART_A2(void);
 //      P9.6 -> RX
 //      P9.7 -> TX
 void initUART_A3(void);
-//void EUSCIA3_IRQHandler(void);
 void transmitUART_A3(uint8_t data);
 uint8_t receiveUART_A3(void);
 #endif
