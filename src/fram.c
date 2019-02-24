@@ -486,8 +486,8 @@ int getFreeSectors(FRAM_libraryEntry (*indexEntries)[MAX_ENTRIES]){
         if( (*indexEntries)[i].length != 0){
             lengthInSectors = ( (*indexEntries)[i].length / SECTOR_SIZE ) + 1;
         }
-        for(k=startSector; k<lengthInSectors; k++){
-            sectorMap[k] = 1 + '0'; // turn int into a char
+        for(k=startSector; k<(lengthInSectors+lengthInSectors); k++){
+            sectorMap[k] = i + '0'; // turn int into a char
         }
     }
 
