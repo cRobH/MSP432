@@ -50,7 +50,7 @@ uint8_t receiveUART_A1(void);
 #ifdef __ENABLE_UCA2
 //-------------------------------
 // EUSCI A2 Uses Pins:
-//      P3.2 -> RX+
+//      P3.2 -> RX
 //      P3.3 -> TX
 void initUART_A2(void);
 void transmitUART_A2(uint8_t data);
